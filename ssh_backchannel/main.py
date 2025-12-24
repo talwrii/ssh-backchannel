@@ -81,18 +81,18 @@ def run_callback(command_str):
     
     ssh_cmd = ["ssh", "-i", str(private_key), "-o", "StrictHostKeyChecking=no", f"{target_user}@{current_ip}", command_str]
     
-    # If stdin is not a TTY (meaning something is being piped in), 
-    # we pass that file descriptor directly to the SSH process.
+    # Pipes the local stdin into the SSH command
     if not sys.stdin.isatty():
         subprocess.run(ssh_cmd, stdin=sys.stdin)
     else:
         subprocess.run(ssh_cmd)
 
 def handle_connect():
+    """Handles incoming callback, managing STDIN and EOF for the workstation process."""
     payload = os.environ.get("SSH_ORIGINAL_COMMAND", "echo 'No command received'")
     uid = os.getuid()
 
-    # X11 Bridging
+    # X11 Bridging Setup
     os.environ.setdefault("DISPLAY", ":0")
     if "XAUTHORITY" not in os.environ:
         xauth = Path.home() / ".Xauthority"
@@ -104,21 +104,32 @@ def handle_connect():
                 if matches: os.environ["XAUTHORITY"] = str(matches[0])
             except: pass
 
-    # Use Zenity for confirmation
+    # Use Zenity for GUI confirmation
     if shutil.which("zenity"):
         res = subprocess.run([
             "zenity", "--question", "--title=SSH Backchannel", 
-            f"--text=Run command on your workstation?\n\n$ {payload}", 
+            f"--text=A remote server wants to run:\n\n$ {payload}", 
             "--timeout=30", "--width=450"
         ])
+        
         if res.returncode == 0:
-            # We use shell=True to allow the workstation to interpret the escaped string.
-            # STDIN is naturally inherited from the SSH process.
-            subprocess.run(payload, shell=True)
+            # Popen allows us to explicitly manage stdin to ensure tools like xclip get an EOF
+            proc = subprocess.Popen(payload, shell=True, stdin=subprocess.PIPE)
+            try:
+                if not sys.stdin.isatty():
+                    # Stream data from the SSH tunnel into the local process stdin
+                    shutil.copyfileobj(sys.stdin.buffer, proc.stdin)
+                
+                # Crucial: Close stdin to signal EOF so the process can finish
+                proc.stdin.close() 
+                proc.wait()
+            except Exception as e:
+                print(f"[*] Command Error: {e}")
+                proc.kill()
         else:
-            print("Action denied.")
+            print("[*] Action denied by user.")
     else:
-        print("Error: Zenity not found.")
+        print("[!] Error: Zenity not found. Closing.")
 
 def main():
     parser = argparse.ArgumentParser(description="SSH Backchannel Utility")
@@ -140,6 +151,7 @@ def main():
     elif args.command == "setup-remote":
         setup_remote(args.remote)
     elif args.command == "run":
+        # shlex.join ensures the command is properly escaped for the shell
         run_callback(shlex.join(args.cmd_words))
     elif args.command == "connect":
         handle_connect()
