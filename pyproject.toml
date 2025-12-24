@@ -1,27 +1,24 @@
 [build-system]
-requires = ["hatchling"]
+requires = [ "hatchling",]
 build-backend = "hatchling.build"
 
 [project]
 name = "ssh-backchannel"
-version = "1.1.1"
+version = "1.1.2"
 description = "A Python-based SSH forced-command gatekeeper for remote callbacks."
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
-authors = [
-    {name = "@readwithai", email = "talwrii@gmail.com"}
-]
-keywords = ["ssh", "callback", "automation", "security"]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Environment :: Console",
-    "Topic :: System :: Networking",
-]
+keywords = [ "ssh", "callback", "automation", "security",]
+classifiers = [ "Programming Language :: Python :: 3", "Environment :: Console", "Topic :: System :: Networking",]
+[[project.authors]]
+name = "@readwithai"
+email = "talwrii@gmail.com"
+
+[project.license]
+text = "MIT"
 
 [project.scripts]
-# This maps the command 'ssh-backchannel' to the main function in your module
 ssh-backchannel = "ssh_backchannel.main:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ssh_backchannel"]
+packages = [ "ssh_backchannel",]
