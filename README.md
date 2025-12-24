@@ -1,5 +1,8 @@
 # ssh-backchannel
-Sometimes I want to do things on my machine from a machine I am ssh'd into. This provides a means to do so - in a securish way.
+
+WARNING. This is vibe coded. Review before use.
+
+Sometimes I want to do things on my local machine from a remotes machine I am ssh'd into. ssh-backchannel provides a means to do so - in a moderately secure way. It allows you to run a local command from a remote machine, while asking for confirmation from your local machine.
 
 ## Architecture
 A limited ssh key is created and passed to other machines when you log in. This key can only run a command which asks you for permission before running commands.
