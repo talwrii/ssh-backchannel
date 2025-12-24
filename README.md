@@ -15,6 +15,8 @@ If you just want to write to your clipboard there are tools which use OSC escape
 ## Caveat
 This only works if your host can be reached from the remote machine and may involve openning your machine ot the internet or using a VPN / being on the same subnet. Reverse proxying would probably be the easiest fix.
 
+It is assumed that there is only one user who consistently uses a machine.
+
 Alternatively, you could use reverse proxying in your ssh config.
 
 
