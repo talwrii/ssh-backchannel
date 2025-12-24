@@ -4,6 +4,7 @@ import subprocess
 import argparse
 import socket
 import shutil
+import shlex  # Added for robust shell escaping
 from pathlib import Path
 
 # Configuration Constants
@@ -73,6 +74,8 @@ def run_callback(command_str):
     if not target_user:
         target_user = os.getlogin()
     private_key = Path.home() / ".ssh" / "id_backchannel"
+    
+    # We pass the escaped command string to the restricted SSH session
     ssh_cmd = ["ssh", "-i", str(private_key), "-o", "StrictHostKeyChecking=no", f"{target_user}@{current_ip}", command_str]
     subprocess.run(ssh_cmd)
 
@@ -109,6 +112,7 @@ def handle_connect():
             ], capture_output=True)
             
             if res.returncode == 0:
+                # The payload is already escaped when it arrives here via SSH_ORIGINAL_COMMAND
                 subprocess.run(payload, shell=True)
             else:
                 print("Action declined or timed out.")
@@ -122,13 +126,11 @@ def main():
     subparsers = parser.add_subparsers(dest="command")
     
     subparsers.add_parser("configure")
-    
     sr = subparsers.add_parser("setup-remote")
     sr.add_argument("remote")
     
-    # Use nargs="+" to capture all trailing words as the command
     run = subparsers.add_parser("run")
-    run.add_argument("cmd_words", nargs="+", help="The command to run locally (can be multiple words)")
+    run.add_argument("cmd_words", nargs="+", help="The command to run locally")
     
     subparsers.add_parser("connect")
     
@@ -139,8 +141,8 @@ def main():
     elif args.command == "setup-remote":
         setup_remote(args.remote)
     elif args.command == "run":
-        # Join the list of words back into a single string for SSH
-        full_cmd = " ".join(args.cmd_words)
+        # shlex.join properly quotes and escapes the list into a shell-safe string
+        full_cmd = shlex.join(args.cmd_words)
         run_callback(full_cmd)
     elif args.command == "connect":
         handle_connect()
