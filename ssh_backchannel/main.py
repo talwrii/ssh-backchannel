@@ -77,21 +77,17 @@ def run_callback(command_str):
     subprocess.run(ssh_cmd)
 
 def handle_connect():
-    """Bridges the SSH session to the local X11 display session."""
     payload = os.environ.get("SSH_ORIGINAL_COMMAND", "echo 'No command received'")
     uid = os.getuid()
 
-    # --- X11 Environment Bridging ---
     if "DISPLAY" not in os.environ:
         os.environ["DISPLAY"] = ":0"
     
     if "XAUTHORITY" not in os.environ:
-        # Standard location for most desktop environments
         xauth = Path.home() / ".Xauthority"
         if xauth.exists():
             os.environ["XAUTHORITY"] = str(xauth)
         else:
-            # Fallback for display managers like GDM that store auth in /run
             try:
                 matches = list(Path(f"/run/user/{uid}/").glob("gdm/Xauthority"))
                 if matches:
@@ -99,7 +95,6 @@ def handle_connect():
             except Exception:
                 pass
 
-    # Ensure DBUS is available for Zenity notification system
     if "DBUS_SESSION_BUS_ADDRESS" not in os.environ:
         dbus_path = Path(f"/run/user/{uid}/bus")
         if dbus_path.exists():
@@ -107,7 +102,6 @@ def handle_connect():
 
     if shutil.which("zenity"):
         try:
-            # timeout ensures the SSH process doesn't hang forever if display is dead
             res = subprocess.run([
                 "zenity", "--question", "--title=SSH Backchannel", 
                 f"--text=A remote server wants to run:\n\n{payload}", 
@@ -121,22 +115,35 @@ def handle_connect():
         except Exception as e:
             print(f"X11 Display Error: {e}")
     else:
-        print("Error: zenity not found. X11 callback failed.")
+        print("Error: zenity not found.")
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="SSH Backchannel Utility")
     subparsers = parser.add_subparsers(dest="command")
+    
     subparsers.add_parser("configure")
+    
     sr = subparsers.add_parser("setup-remote")
     sr.add_argument("remote")
+    
+    # Use nargs="+" to capture all trailing words as the command
     run = subparsers.add_parser("run")
-    run.add_argument("cmd_str")
+    run.add_argument("cmd_words", nargs="+", help="The command to run locally (can be multiple words)")
+    
     subparsers.add_parser("connect")
+    
     args = parser.parse_args()
-    if args.command == "configure": configure()
-    elif args.command == "setup-remote": setup_remote(args.remote)
-    elif args.command == "run": run_callback(args.cmd_str)
-    elif args.command == "connect": handle_connect()
+    
+    if args.command == "configure":
+        configure()
+    elif args.command == "setup-remote":
+        setup_remote(args.remote)
+    elif args.command == "run":
+        # Join the list of words back into a single string for SSH
+        full_cmd = " ".join(args.cmd_words)
+        run_callback(full_cmd)
+    elif args.command == "connect":
+        handle_connect()
 
 if __name__ == "__main__":
     main()
