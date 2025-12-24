@@ -1,0 +1,14 @@
+# ssh-backchannel
+Sometimes I want to do things on my machine from a machine I am ssh'd into. This provides a means to do so - in a securish way.
+
+## Architecture
+A limited ssh key is created and passed to other machines when you log in. This key can only run a command which asks you for permission before running commands.
+
+## Alternatives and prior work
+If you are happy with it you could use ssh auth forwarding and just ssh into your machine. This adds a little more security since you must approve each command.
+
+If you just want to write to your clipboard there are tools which use OSC escape codes to send data via your terminal. The only downside is that you need to set up terminal to handle deal with this. I do not like debugging this sort of stuff.
+
+
+
+
