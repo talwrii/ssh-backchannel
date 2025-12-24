@@ -4,12 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ssh-backchannel"
-version = "1.3.0"
+version = "1.3.1"
 description = "A Python-based SSH forced-command gatekeeper for remote callbacks."
 readme = "README.md"
 requires-python = ">=3.8"
 keywords = [ "ssh", "callback", "automation", "security",]
 classifiers = [ "Programming Language :: Python :: 3", "Environment :: Console", "Topic :: System :: Networking",]
+
 [[project.authors]]
 name = "@readwithai"
 email = "talwrii@gmail.com"
@@ -19,6 +20,7 @@ text = "MIT"
 
 [project.scripts]
 ssh-backchannel = "ssh_backchannel.main:main"
+ssh-backchannel-connect = "ssh_backchannel.main:handle_connect"
 
 [tool.hatch.build.targets.wheel]
 packages = [ "ssh_backchannel",]
